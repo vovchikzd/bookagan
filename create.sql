@@ -42,9 +42,11 @@ execute function update_modified_date();
 
 create table if not exists work_authors (
   id serial primary key
+  , idWork integer not null
   , idAuthor integer not null
   , dCreated timestamp with time zone default current_timestamp
   , dUpdated timestamp with time zone default current_timestamp
+  , foreign key (idWork) references works(id) on delete cascade
   , foreign key (idAuthor) references authors(id) on delete cascade
 );
 
