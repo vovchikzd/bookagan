@@ -165,6 +165,72 @@ for each row
 execute function prevent_creation_date_update();
 
 
+create table if not exists Bkg_Series (
+  id bigserial primary key
+  , sCaption varchar(100) not null
+  , idLanguage int8 not null
+  , bIsOriginLang boolean not null
+  , dCreateDate timestamptz default current_timestamp
+  , dUpdateDate timestamptz default current_timestamp
+  , foreign key (idLanguage) references Bkg_Language(id)
+);
+
+create or replace trigger bkg_series_update_row_modified_date
+before update on Bkg_Series
+for each row
+execute function update_modified_date();
+
+create or replace trigger bkg_series_check_not_edit_create_date
+before update on Bkg_Series
+for each row
+execute function prevent_creation_date_update();
+
+
+create table if not exists Bkg_SeriesTranslate (
+  id bigserial primary key
+  , idSeries int8 not null
+  , idLanguage int8 not null
+  , sCaption varchar(100) not null
+  , dCreateDate timestamptz default current_timestamp
+  , dUpdateDate timestamptz default current_timestamp
+  , foreign key (idSeries) references Bkg_Series(id) on delete cascade
+  , foreign key (idLanguage) references Bkg_Language(id)
+);
+
+create or replace trigger bkg_seriestranslate_update_row_modified_date
+before update on Bkg_SeriesTranslate
+for each row
+execute function update_modified_date();
+
+create or replace trigger bkg_seriestranslate_check_not_edit_create_date
+before update on Bkg_SeriesTranslate
+for each row
+execute function prevent_creation_date_update();
+
+
+create table if not exists Bkg_WorkSeriesLink (
+  id bigserial primary key
+  , idWork int8 not null
+  , idSeries int8 not null
+  , sOrder varchar(5) not null
+  , dCreateDate timestamptz default current_timestamp
+  , dUpdateDate timestamptz default current_timestamp
+  , foreign key (idWork) references Bkg_Works(id) on delete cascade
+  , foreign key (idSeries) references Bkg_Series(id) on delete cascade
+  , constraint bkg_workserieslink_check_numeric_string_constraint check (sOrder ~ '^[0-9]+(\.[0-9]+)?$')
+);
+
+create or replace trigger bkg_workserieslink_update_row_modified_date
+before update on Bkg_WorkSeriesLink
+for each row
+execute function update_modified_date();
+
+create or replace trigger bkg_workserieslink_check_not_edit_create_date
+before update on Bkg_WorkSeriesLink
+for each row
+execute function prevent_creation_date_update();
+
+
 create table if not exists Bkg_Books (
   id bigserial primary key
   , sCaption varchar(100) not null
