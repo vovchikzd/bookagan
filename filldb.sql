@@ -46,3 +46,15 @@ select t.id, t2.id
 from Bkg_Books t, Bkg_Works t2
 where t.sISBN = '978-5-17-097119-0'
   and t2.sCaption = 'Маленькая жизнь';
+
+
+insert into Bkg_Authors (idLanguage, sFirstName, sLastName, sCoverName, bIsOriginLang)
+select t.id, 'Robin', 'Hobb', 'Robin Hobb', true
+from Bkg_Language t
+where t.sISO1 = 'en';
+
+insert into Bkg_AuthorsTranslate (idAuthor, idLanguage, sFirstName, sLastName, sCoverName)
+select t.id, t2.id, 'Робин', 'Хобб', 'Робин Хобб'
+from Bkg_Authors t, Bkg_Language t2
+where t.sCoverName = 'Robin Hobb' and t2.sISO1 = 'ru';
+
