@@ -1,17 +1,11 @@
-create or replace function update_modified_date()
-returns trigger as $$
-begin
-  new.dUpdateDate = current_timestamp;
-  return new;
-end;
-$$ language plpgsql;
-
-create or replace function prevent_creation_date_update()
+create or replace function auto_update_dates_trigger_fn()
 returns trigger as $$
 begin
   if new.dCreateDate is distinct from old.dCreateDate then
     raise exception 'Editing of column "dCreateDate" is prohibited';
   end if;
+
+  new.dUpdateDate = current_timestamp;
   return new;
 end;
 $$ language plpgsql;
@@ -32,12 +26,7 @@ create table if not exists Bkg_Language (
 create or replace trigger bkg_language_update_row_modified_date
 before update on Bkg_Language
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_language_check_not_edit_create_date
-before update on Bkg_Language
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 insert into Bkg_Language (sISO1, sISO2, sISO3, sEnglishName, sNativeName)
 values
@@ -65,12 +54,7 @@ create table if not exists Bkg_Authors (
 create or replace trigger bkg_authors_update_row_modified_date
 before update on Bkg_Authors
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_authors_check_not_edit_create_date
-before update on Bkg_Authors
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_AuthorsTranslate (
@@ -90,12 +74,7 @@ create table if not exists Bkg_AuthorsTranslate (
 create or replace trigger bkg_authorstranslate_update_row_modified_date
 before update on Bkg_AuthorsTranslate
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_authorstranslate_check_not_edit_create_date
-before update on Bkg_AuthorsTranslate
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_Works (
@@ -113,12 +92,7 @@ create table if not exists Bkg_Works (
 create or replace trigger bkg_works_update_row_modified_date
 before update on Bkg_Works
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_works_check_not_edit_create_date
-before update on Bkg_Works
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_WorksTranslate (
@@ -135,12 +109,7 @@ create table if not exists Bkg_WorksTranslate (
 create or replace trigger bkg_workstranslate_update_row_modified_date
 before update on Bkg_WorksTranslate
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_workstranslate_check_not_edit_create_date
-before update on Bkg_WorksTranslate
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_WorksAuthorsLink (
@@ -157,12 +126,7 @@ create table if not exists Bkg_WorksAuthorsLink (
 create or replace trigger bkg_worksauthorslink_update_row_modified_date
 before update on Bkg_WorksAuthorsLink
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_worksauthorslink_check_not_edit_create_date
-before update on Bkg_WorksAuthorsLink
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_Series (
@@ -178,12 +142,7 @@ create table if not exists Bkg_Series (
 create or replace trigger bkg_series_update_row_modified_date
 before update on Bkg_Series
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_series_check_not_edit_create_date
-before update on Bkg_Series
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_SeriesTranslate (
@@ -200,12 +159,7 @@ create table if not exists Bkg_SeriesTranslate (
 create or replace trigger bkg_seriestranslate_update_row_modified_date
 before update on Bkg_SeriesTranslate
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_seriestranslate_check_not_edit_create_date
-before update on Bkg_SeriesTranslate
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_WorkSeriesLink (
@@ -223,12 +177,7 @@ create table if not exists Bkg_WorkSeriesLink (
 create or replace trigger bkg_workserieslink_update_row_modified_date
 before update on Bkg_WorkSeriesLink
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_workserieslink_check_not_edit_create_date
-before update on Bkg_WorkSeriesLink
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_Books (
@@ -244,12 +193,7 @@ create table if not exists Bkg_Books (
 create or replace trigger bkg_books_update_row_modified_date
 before update on Bkg_Books
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_books_check_not_edit_create_date
-before update on Bkg_Books
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_BooksContent (
@@ -266,12 +210,7 @@ create table if not exists Bkg_BooksContent (
 create or replace trigger bkg_bookscontent_update_row_modified_date
 before update on Bkg_BooksContent
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_bookscontent_check_not_edit_create_date
-before update on Bkg_BooksContent
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
 
 
 create table if not exists Bkg_BooksAdditionalISBN (
@@ -287,9 +226,4 @@ create table if not exists Bkg_BooksAdditionalISBN (
 create or replace trigger bkg_booksadditionalisbn_update_row_modified_date
 before update on Bkg_BooksAdditionalISBN
 for each row
-execute function update_modified_date();
-
-create or replace trigger bkg_booksadditionalisbn_check_not_edit_create_date
-before update on Bkg_BooksAdditionalISBN
-for each row
-execute function prevent_creation_date_update();
+execute function auto_update_dates_trigger_fn();
