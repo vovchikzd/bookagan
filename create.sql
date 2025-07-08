@@ -1,4 +1,75 @@
-/* create trigger function */
+/* create event trigger for table validation */
+create or replace function validate_table_requirements()
+returns event_trigger as $$
+declare
+  r record;
+  table_oid oid;
+begin
+  for r in
+    select
+      *
+    from pg_event_trigger_ddl_commands()
+    where lower(command_tag) = lower('create table')
+  loop
+    table_oid := r.objid;
+    
+    /* check primary key is id */
+    if not exists(
+      select 1
+      from pg_constraint c
+      join pg_attribute a on a.attrelid = c.conrelid
+        and a.attnum = any(c.conkey)
+      where c.conrelid = table_oid
+        and c.contype = 'p'
+        and a.attname = 'id'
+    ) then
+      raise exception 'Primary key "id" is required';
+    end if;
+
+    /* check primary key is bigserial */
+    if not exists(
+      select 1
+      from pg_attribute
+      where attrelid = table_oid
+        and attname = 'id'
+        and atttypid = 'int8'::regtype
+        and attnotnull
+    ) then
+      raise exception 'Field "id" is required to be not null and has type int8';
+    end if;
+
+    /* check existense of dCreateDate and dUpdateDate */
+    if not exists(
+      select 1
+      from pg_attribute
+      where attrelid = table_oid
+        and lower(attname) = lower('dcreatedate')
+        and atttypid = 'timestamptz'::regtype
+        and atthasdef
+    ) then
+      raise exception 'Field "dCreateDate" (timestamptz) is required';
+    end if;
+
+    if not exists(
+      select 1
+      from pg_attribute
+      where attrelid = table_oid
+        and lower(attname) = lower('dupdatedate')
+        and atttypid = 'timestamptz'::regtype
+        and atthasdef
+    ) then
+      raise exception 'Field "dUpdateDate" (timestamptz) is required';
+    end if;
+  end loop;
+end;
+$$ language plpgsql;
+
+create event trigger enforce_table_requirements
+on ddl_command_end
+execute function validate_table_requirements();
+
+
+/* create trigger function for date updates */
 create or replace function auto_update_dates_trigger_fn()
 returns trigger as $$
 begin
@@ -31,8 +102,8 @@ insert into Bkg_Language (sISO1, sISO2, sEnglishName, sNativeName)
 values
   ('en', 'eng', 'English', 'English')
   , ('ru', 'rus', 'Russian', 'Русский')
-  , ('fr', 'fre', 'French', 'Français')
-  , ('de', 'ger', 'German', 'Deutsch')
+  , ('fr', 'fra', 'French', 'Français')
+  , ('de', 'deu', 'German', 'Deutsch')
   , ('pl', 'pol', 'Polish', 'Polski')
   , ('he', 'heb', 'Hebrew', 'עברית');
 
@@ -129,6 +200,7 @@ create table if not exists Bkg_WorkVolume (
   , sVolumeTitle varchar(100) -- null or '' for one volume versions, then i can use coalesce(nullif(sVolumeTitle, ''), sTitle)
   , dCreateDate timestamptz default current_timestamp
   , dUpdateDate timestamptz default current_timestamp
+  , unique (idWorkVersion, nOrder)
 );
 
 create or replace trigger bkg_workvolume_update_row_modified_date
@@ -200,6 +272,7 @@ create table if not exists Bkg_WorkSeriesLink (
   , dCreateDate timestamptz default current_timestamp
   , dUpdateDate timestamptz default current_timestamp
   , unique (idWork, idSeries)
+  , unique (idSeries, nOrder)
 );
 
 create or replace trigger bkg_workserieslink_update_row_modified_date
@@ -242,14 +315,28 @@ execute function auto_update_dates_trigger_fn();
 /* create additional isbn table */
 create table if not exists Bkg_AdditionalIsbn (
   id bigserial primary key
-  , idBook int8 not null references Bkg_Book(id) on delete cascade
-  , sISBN varchar(17) not null check (trim(sISBN) != '') -- will be validated inside app
+  , sISBN varchar(17) not null unique check (trim(sISBN) != '') -- will be validated inside app
   , dCreateDate timestamptz default current_timestamp
   , dUpdateDate timestamptz default current_timestamp
-  , unique (idBook, sISBN)
 );
 
 create or replace trigger bkg_additionalisbn_update_row_modified_date
 before update on Bkg_AdditionalIsbn
+for each row
+execute function auto_update_dates_trigger_fn();
+
+
+/* create book -> additional isbn link table*/
+create table if not exists Bkg_BookAddIsbnLink (
+  id bigserial primary key
+  , idBook int8 not null references Bkg_Book(id) on delete cascade
+  , idAdditionalIsbn int8 not null references Bkg_AdditionalIsbn(id) on delete cascade
+  , dCreateDate timestamptz default current_timestamp
+  , dUpdateDate timestamptz default current_timestamp
+  , unique (idBook, idAdditionalIsbn)
+);
+
+create or replace trigger bkg_bookaddisbnlink_update_row_modified_date
+before update on Bkg_BookAddIsbnLink
 for each row
 execute function auto_update_dates_trigger_fn();
